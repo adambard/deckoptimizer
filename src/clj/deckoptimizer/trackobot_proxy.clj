@@ -1,4 +1,5 @@
 (ns deckoptimizer.trackobot-proxy
+  (:gen-class)
   (:require
     [clj-http.client :as client]
     [ring.middleware.json :refer [wrap-json-response]]
@@ -10,6 +11,7 @@
     [ring.util.response :as resp]
     [cemerick.friend :as friend]
     [cemerick.friend.workflows :refer [make-auth]]
+    [environ.core :refer [env]]
     )
   )
 
@@ -17,7 +19,6 @@
 
 (defn get-history [{{{[username token] :current} ::friend/identity} :session
                     {page "page"} :params :as req}]
-  (prn req)
   (try
     (-> 
       (client/get (str "https://trackobot.com/profile/history.json?username=" username "&token=" token "&page=" (or page 0))
@@ -70,14 +71,11 @@
       (wrap-json-response)
       ))
 
+(defn -main []
+  (run-jetty #'app {:port (Integer/parseInt (env :port "3000"))}))
+
 
 (comment
   ((wrap-static-session api) {:request-method :get :uri "/history.json" :params {"page" "1"}})
-  (run-jetty #'app {:port 5000 :join? false})
-  (meta (app {:uri "/login" :request-method :get :params {"username" "white-succubus-6699"
-                                                         "token" "awGDK5iVNEC_TpT_iXnQ"
-                                                    }
-        :headers {"Cookie" "ring-session=528fb5a9-2d1f-482c-9f87-754b58334764;Path=/"}
-        }))
   )
 
