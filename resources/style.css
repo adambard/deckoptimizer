@@ -1,0 +1,78 @@
+body{
+  font-family: "Arial", sans-serif;
+}
+
+#main{
+  width: 900px;
+  display: block;
+  margin: 50px auto;
+  line-height: 24px;
+}
+
+.top{
+  float: right;
+}
+
+label, input, select{
+  display: block;
+  line-height: inherit;
+  font-size: inherit;
+  outline: none;
+}
+
+label{
+  margin-top: 12px;
+}
+
+p{
+  margin-top: 24px;
+}
+
+button, input[type="submit"]{
+  background: transparent;
+  border-radius: 5px;
+  border: 1px solid #09f;
+  color: #09f;
+  font-size: 1.2em;
+  line-height: 32px;
+  padding: 6px 12px;
+  margin-top: 12px;
+  cursor: pointer;
+  outline: none;
+}
+button:hover, input[type="submit"]:hover{
+  background: #cef;
+}
+
+table{
+  width: 100%;
+  border: 1px solid #eee;
+  border-collapse: collapse;
+}
+
+th{
+  border-bottom: 1px solid #ddd;
+  line-height: 24px;
+  text-align: right;
+  padding: 0 12px;
+}
+
+td{
+  border-bottom: 1px solid #eee;
+  line-height: 24px;
+  text-align: right;
+  padding: 0 12px;
+}
+
+th.card-name,
+td.card-name{
+  text-align: left;
+}
+
+td.good{
+  background: #dfd;
+}
+
+td.bad{
+  background: #fdd;
+}
