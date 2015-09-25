@@ -45,8 +45,12 @@
     (cljs :optimizations :none)))
 
 (deftask build []
+ (comp
   (cljs :optimizations :whitespace)
-  (serve :handler 'deckoptimizer.trackobot-proxy/app :port (Integer/parseInt (env :port "3000"))))
+  (pom :project 'deckoptimizer :version "1.0.0")
+  (uber)
+  (aot :namespace '#{deckoptimizer.trackobot-proxy})
+  (jar :main 'deckoptimizer.trackobot-proxy)))
 
 (deftask run []
   (comp
