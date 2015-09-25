@@ -44,8 +44,10 @@
     (cljs-repl)
     (cljs :optimizations :none)))
 
+(deftask build []
+  (cljs :optimizations :whitespace))
+
 (deftask run []
   (comp
     (wait)
-    (serve :handler 'deckoptimizer.trackobot-proxy/app :port (Integer/parseInt (env :port "3000")))
-    (cljs :optimizations :whitespace)))
+    (serve :handler 'deckoptimizer.trackobot-proxy/app :port (Integer/parseInt (env :port "3000")))))
