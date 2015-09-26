@@ -5,7 +5,7 @@
     [ring.middleware.json :refer [wrap-json-response]]
     [ring.middleware.params :refer [wrap-params]]
     [ring.middleware.session :refer [wrap-session]]
-    [compojure.core :refer [GET defroutes]]
+    [compojure.core :refer [GET ANY defroutes]]
     [compojure.route :as route]
     [ring.adapter.jetty :refer [run-jetty]]
     [ring.util.response :as resp]
@@ -29,7 +29,7 @@
     (catch Exception e
       {:status 500
        :body (:body e)
-       :headers {"X-ERROR" (str e)} }) ))
+       :headers {}})))
 
 
 (defn login [{{{[username token] :current} ::friend/identity} :session}]
@@ -43,6 +43,8 @@
   (GET "/" [] (-> (resp/resource-response "index.html")
                   (resp/content-type "text/html")))
   (GET "/login" req (login req))
+  (friend/logout
+    (ANY "/logout" req (resp/redirect "/")))
   (GET "/history.json" req (friend/authorize #{::user} (get-history req)))
   (route/resources "/" {:root ""})
   )
@@ -76,6 +78,7 @@
 
 
 (comment
-  ((wrap-static-session api) {:request-method :get :uri "/history.json" :params {"page" "1"}})
+  ((wrap-static-session api)
+   {:request-method :get :uri "/history.json" :params {"page" "1"}})
   )
 

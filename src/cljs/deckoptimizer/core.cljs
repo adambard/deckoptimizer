@@ -199,7 +199,8 @@
   [:div#main
    (if logged-in
      [:div.container
-      [:div.top (str "Welcome, " (:username @*appdata*))]
+      [:div.top (str "Welcome, " (:username @*appdata*) ". ")
+       [:a {:href "/logout"}  "Log Out"]]
       [:h1 "McHammar's Deck Evolver!"]
       [input-form]
       [cards-table]
