@@ -20,12 +20,8 @@ label, input, select{
   outline: none;
 }
 
-label{
-  margin-top: 12px;
-}
-
 p{
-  margin-top: 24px;
+  padding-top: 24px;
 }
 
 button, input[type="submit"]{
@@ -33,12 +29,13 @@ button, input[type="submit"]{
   border-radius: 5px;
   border: 1px solid #09f;
   color: #09f;
-  font-size: 1.2em;
-  line-height: 32px;
+  font-size: 1em;
+  line-height: 24px;
   padding: 6px 12px;
-  margin-top: 12px;
+  margin-top: 24px;
   cursor: pointer;
   outline: none;
+  float: left;
 }
 button:hover, input[type="submit"]:hover{
   background: #cef;
@@ -75,4 +72,14 @@ td.good{
 
 td.bad{
   background: #fdd;
+}
+
+.filter-form, p{
+  clear: both;
+  padding-top: 24px;
+}
+
+.field{
+  width: 33%;
+  float: left;
 }

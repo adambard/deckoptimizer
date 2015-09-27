@@ -13,19 +13,39 @@
 
 (defonce *appdata* (r/atom {:authenticated false
                             :username nil}))
-(defonce *filters* (r/atom {:class-filter "Druid"
+(defonce *filters* (r/atom {:class-filter "Any"
                             :deck-filter ""
-                            :n-games 100}))
+                            :mode-filter "Ranked"
+                            :n-games 100
+                            :vs-class-filter "Any"
+                            :vs-deck-filter ""
+                            }))
 (defonce *games* (r/atom []))
 
-(defonce ALL-CLASSES ["Druid" "Hunter" "Mage" "Paladin" "Priest" "Rogue" "Shaman" "Warlock" "Warrior"])
+(defn log-> [it]
+  (js/console.log it)
+  it)
+
+(defn lower [s]
+  (if (not (empty? s))
+    (.toLowerCase s)))
+
+(defonce ALL-CLASSES ["Any" "Druid" "Hunter" "Mage" "Paladin" "Priest" "Rogue" "Shaman" "Warlock" "Warrior"])
+(defonce ALL-MODES ["Any" "Ranked" "Casual" "Arena"])
+
+(defn apply-filter [filter-v v]
+  (if (and (not (empty? filter-v))
+           (not (= "Any" filter-v)))
+    (= (lower filter-v) (lower v))
+    true))
 
 (defn filter-game [filters game]
   (and
-    (= (:hero game) (get filters :class-filter))
-    (if (not (empty? (:deck-filter filters)))
-      (= (:hero_deck game) (get filters :deck-filter))
-      true)))
+    (apply-filter (:class-filter filters) (:hero game))
+    (apply-filter (:mode-filter filters) (:mode game))
+    (apply-filter (:deck-filter filters) (:hero_deck game))
+    (apply-filter (:vs-class-filter filters) (:opponent game))
+    (apply-filter (:vs-deck-filter filters) (:opponent_deck game))))
 
 (defn populate-data [games-atom filters]
   (reset! games-atom [])
@@ -38,7 +58,6 @@
           :handler (fn [data]
                      (->> data
                           (:history)
-                          (filter (partial filter-game filters))
                           (swap! games-atom concat)))})))
 
 ; Data Crunching
@@ -89,7 +108,6 @@
 
 (defn handle-submit [e]
   (.preventDefault e)
-  (js/console.log @*filters*)
   (populate-data *games* @*filters*)
   false
   )
@@ -108,37 +126,61 @@
            v (.-value (aget (.-options el) (.-selectedIndex el)))]
       (swap! *filters* assoc k v))))
 
-(defn input-form []
-  (js/console.log "Render input form")
+(defn filter-text-field [label field-key]
+  (let [v (get @*filters* field-key)
+        field-name (name field-key)]
+    [:div.field
+     [:label {:for field-name} label]
+     [:input {:name field-name
+              :id field-name
+              :type "text"
+              :value v
+              :on-change (update-filter! field-key)}]]))
+
+(defn filter-select-field [label field-key options]
+  (let [v (get @*filters* field-key)
+        field-name (name field-key)]
+    [:div.field
+     [:label {:for field-name} label]
+     [:select {:name field-name :id field-name :value v :on-change (update-select! field-key)}
+      (for [cls options]
+        [:option {:value cls :key cls} cls])]]))
+
+(defn load-form []
+  [:form {:id "filter-form" :on-submit handle-submit}
+   [:div.field
+      [:label {:for "n-games"} "# of games to load"]
+      [:input {:name "n-games" :id "n-games" :type "number" :value (:n-games @*filters*) :on-change (update-number! :n-games)}]]
+   [:input {:type "submit" :value "Update Data"}]])
+
+(defn filter-form []
   (let [{class-filter :class-filter
          deck-filter :deck-filter
-         n-games :n-games} @*filters*]
-    [:form {:id "filter-form" :on-submit handle-submit}
+         mode-filter :mode-filter
+         n-games :n-games
+         vs-class-filter :vs-class-filter
+         vs-deck-filter :vs-deck-filter} @*filters*]
+    [:div.filter-form
+     [filter-select-field "Game Mode" :mode-filter ALL-MODES]
+     [filter-select-field "My Class" :class-filter ALL-CLASSES]
+     [filter-text-field "My Deck" :deck-filter]
 
-     [:label {:for "deck-filter"} "Filter by Class"]
-     [:select {:name "class-filter" :id "class-filter" :value class-filter :on-change (update-select! :class-filter)}
-      (for [cls ALL-CLASSES]
-        [:option {:value cls :key cls} cls])]
-
-     [:label {:for "deck-filter"} "Filter by Deck Name"]
-     [:input {:name "deck-filter" :id "deck-filter" :type "text" :value deck-filter :on-change (update-filter! :deck-filter)}]
-
-     [:label {:for "n-games"} "Number of Games to check"]
-     [:input {:name "n-games" :id "n-games" :type "number" :value n-games :on-change (update-number! :n-games)}]
-
-     [:input {:type "submit" :value "Update Data"}]]))
+     [filter-select-field "Opponent's Class" :vs-class-filter ALL-CLASSES]
+     [filter-text-field "Opponent's Deck" :vs-deck-filter]]
+     ))
 
 
 (defn cards-table []
   (let [n-games (:n-games @*filters*)
         scoped-games (->> @*games*
+                          (filter (partial filter-game @*filters*))
                           (sort-games)
                           (take n-games))
         overall-ratio (* 100 (/ (count (filter won? scoped-games))
                                 (count scoped-games)))
         ]
     [:div.table
-     [:p (str "Checking " (count scoped-games) " games matching filter in last " n-games " games. "
+     [:p (str "Checking " (count scoped-games) " games matching filter in last " (count @*games*) " games. "
               "Overall win ratio: " (.toFixed overall-ratio 1) "%")] 
      [:table
       [:thead
@@ -171,15 +213,12 @@
                  :keywords? true
                  :response-format :json
                  :handler (fn [data]
-                            (js/console.log "OK!" data)
                             (swap! *appdata* assoc
                                    :authenticated true
                                    :username (:username data))
                             (populate-data *games* @*filters*)
-                            (js/console.log "UPDATED AUTHENTICATED" @*appdata*)
                             )
                  :error-handler (fn [data]
-                            (js/console.log "ERROR!" data)
                             (swap! *appdata* assoc :authenticated false))
                  }))
 
@@ -194,18 +233,32 @@
                                             :token (form-val "token")}))} "Log In"]]
   )
 
+(defn debug-component []
+  [:ul
+  (for [game @*games*]
+    [:li {:key (:id game)}
+     (str (:id game) " "
+          (:hero game) " "
+          (:hero_deck game) " "
+          (:opponent game) " "
+          (:opponent_deck game)
+          )
+          [:pre (js/JSON.stringify (clj->js game))]])])
+
 (defn app []
-  (let  [logged-in (:authenticated @*appdata*)]
-  [:div#main
-   (if logged-in
-     [:div.container
-      [:div.top (str "Welcome, " (:username @*appdata*) ". ")
-       [:a {:href "/logout"}  "Log Out"]]
-      [:h1 "McHammar's Deck Evolver!"]
-      [input-form]
-      [cards-table]
-      ]
-     [login-form])]))
+  (let [logged-in (:authenticated @*appdata*)]
+    [:div#main
+     (if logged-in
+       [:div.container
+        [:div.top (str "Welcome, " (:username @*appdata*) ". ")
+         [:a {:href "/logout"}  "Log Out"]]
+        [:h1 "McHammar's Deck Evolver!"]
+        [load-form]
+        [filter-form]
+        [cards-table]
+        ;[debug-component]
+        ]
+       [login-form])]))
 
 (check-login {})
 
